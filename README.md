@@ -232,7 +232,7 @@ MIT License - Free for personal and commercial use.
 
 ## Contact
 
-- **GitHub**: [https://github.com/accius/openhamclock.git](https://github.com)
+- **GitHub**: [https://github.com/accius/openhamclock.git](https://github.com/accius/openhamclock.git)
 - **Email**: chris@cjhlighting.com
 
 ---
