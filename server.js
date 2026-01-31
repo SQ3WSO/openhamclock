@@ -115,13 +115,10 @@ app.get('/api/hamqsl/conditions', async (req, res) => {
   }
 });
 
-// DX Cluster proxy - fetches from multiple sources with detailed logging
+// DX Cluster proxy - fetches from multiple sources
 app.get('/api/dxcluster/spots', async (req, res) => {
-  console.log('[DX Cluster] ========== Fetching spots ==========');
-
   // Source 1: HamQTH (uses ^ delimiter!)
   try {
-    console.log('[DX Cluster] Trying HamQTH...');
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 8000);
     
@@ -131,13 +128,10 @@ app.get('/api/dxcluster/spots', async (req, res) => {
     });
     clearTimeout(timeout);
     
-    console.log('[DX Cluster] HamQTH status:', response.status);
     if (response.ok) {
       const text = await response.text();
-      console.log('[DX Cluster] HamQTH response length:', text.length);
       
       const lines = text.trim().split('\n').filter(line => line.trim() && !line.startsWith('#'));
-      console.log('[DX Cluster] HamQTH lines count:', lines.length);
       
       if (lines.length > 0) {
         const spots = [];
@@ -179,21 +173,22 @@ app.get('/api/dxcluster/spots', async (req, res) => {
           }
         }
         
-        console.log('[DX Cluster] HamQTH parsed spots:', spots.length);
+        console.log('[DX Cluster] HamQTH:', spots.length, 'spots');
         if (spots.length > 0) {
-          console.log('[DX Cluster] HamQTH first spot:', JSON.stringify(spots[0]));
-          console.log('[DX Cluster] HamQTH SUCCESS:', spots.length, 'spots');
           return res.json(spots);
         }
       }
     }
   } catch (error) {
-    console.error('[DX Cluster] HamQTH error:', error.name, error.message);
+    if (error.name === 'AbortError') {
+      // Timeout - normal if API is slow, try next source
+    } else {
+      console.error('[DX Cluster] HamQTH error:', error.message);
+    }
   }
 
   // Source 2: DX Summit
   try {
-    console.log('[DX Cluster] Trying DX Summit...');
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 8000);
     
@@ -206,17 +201,13 @@ app.get('/api/dxcluster/spots', async (req, res) => {
     });
     clearTimeout(timeout);
     
-    console.log('[DX Cluster] DX Summit status:', response.status);
     if (response.ok) {
       const text = await response.text();
-      console.log('[DX Cluster] DX Summit response preview:', text.substring(0, 300));
       
       try {
         const data = JSON.parse(text);
-        console.log('[DX Cluster] DX Summit data type:', typeof data, Array.isArray(data) ? 'array len=' + data.length : 'object');
         
         if (Array.isArray(data) && data.length > 0) {
-          console.log('[DX Cluster] DX Summit first item:', JSON.stringify(data[0]));
           const spots = data.slice(0, 20).map(spot => ({
             freq: spot.frequency ? String(spot.frequency) : '0.000',
             call: spot.dx_call || spot.dxcall || spot.callsign || 'UNKNOWN',
@@ -224,20 +215,21 @@ app.get('/api/dxcluster/spots', async (req, res) => {
             time: spot.time ? String(spot.time).substring(0, 5) + 'z' : '',
             spotter: spot.spotter || spot.de || ''
           }));
-          console.log('[DX Cluster] DX Summit SUCCESS:', spots.length, 'spots');
+          console.log('[DX Cluster] DX Summit:', spots.length, 'spots');
           return res.json(spots);
         }
       } catch (parseErr) {
-        console.log('[DX Cluster] DX Summit parse error:', parseErr.message);
+        // Parse error, try next source
       }
     }
   } catch (error) {
-    console.error('[DX Cluster] DX Summit error:', error.name, error.message);
+    if (error.name !== 'AbortError') {
+      console.error('[DX Cluster] DX Summit error:', error.message);
+    }
   }
 
   // Source 3: DXHeat (backup)
   try {
-    console.log('[DX Cluster] Trying DXHeat...');
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 8000);
     
@@ -250,10 +242,8 @@ app.get('/api/dxcluster/spots', async (req, res) => {
     });
     clearTimeout(timeout);
     
-    console.log('[DX Cluster] DXHeat status:', response.status);
     if (response.ok) {
       const text = await response.text();
-      console.log('[DX Cluster] DXHeat response preview:', text.substring(0, 300));
       
       try {
         const data = JSON.parse(text);
@@ -267,18 +257,20 @@ app.get('/api/dxcluster/spots', async (req, res) => {
             time: spot.t ? String(spot.t).substring(11, 16) + 'z' : '',
             spotter: spot.s || spot.spotter || ''
           }));
-          console.log('[DX Cluster] DXHeat SUCCESS:', mapped.length, 'spots');
+          console.log('[DX Cluster] DXHeat:', mapped.length, 'spots');
           return res.json(mapped);
         }
       } catch (parseErr) {
-        console.log('[DX Cluster] DXHeat parse error:', parseErr.message);
+        // Parse error
       }
     }
   } catch (error) {
-    console.error('[DX Cluster] DXHeat error:', error.name, error.message);
+    if (error.name !== 'AbortError') {
+      console.error('[DX Cluster] DXHeat error:', error.message);
+    }
   }
 
-  console.log('[DX Cluster] ========== ALL SOURCES FAILED ==========');
+  // All sources failed or timed out
   res.json([]);
 });
 
