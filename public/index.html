@@ -2771,6 +2771,18 @@
       const [layout, setLayout] = useState(config.layout || 'modern');
       const [dxClusterSource, setDxClusterSource] = useState(config.dxClusterSource || 'auto');
 
+      // Sync local state when config changes or panel opens
+      useEffect(() => {
+        if (isOpen) {
+          setCallsign(config.callsign);
+          setLat(config.location.lat.toString());
+          setLon(config.location.lon.toString());
+          setTheme(config.theme || 'dark');
+          setLayout(config.layout || 'modern');
+          setDxClusterSource(config.dxClusterSource || 'auto');
+        }
+      }, [isOpen, config]);
+
       // Calculate grid square from lat/lon
       useEffect(() => {
         const latNum = parseFloat(lat);
@@ -3477,27 +3489,6 @@
           
           {/* RIGHT SIDEBAR */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', overflow: 'hidden' }}>
-            {/* Satellite Toggle at top */}
-            <div className="panel" style={{ padding: '6px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '12px', color: '#00ffff', fontWeight: '700' }}>🛰 SATELLITES</span>
-              <button
-                onClick={toggleSatellites}
-                style={{
-                  background: mapLayers.showSatellites ? 'rgba(0, 255, 255, 0.3)' : 'rgba(100, 100, 100, 0.3)',
-                  border: `1px solid ${mapLayers.showSatellites ? '#00ffff' : '#666'}`,
-                  color: mapLayers.showSatellites ? '#00ffff' : '#888',
-                  padding: '2px 8px',
-                  borderRadius: '4px',
-                  fontSize: '10px',
-                  fontFamily: 'JetBrains Mono',
-                  cursor: 'pointer'
-                }}
-                title={mapLayers.showSatellites ? 'Hide satellites on map' : 'Show satellites on map'}
-              >
-                🗺️ {mapLayers.showSatellites ? 'ON' : 'OFF'}
-              </button>
-            </div>
-            
             {/* DX Cluster - Compact */}
             <div className="panel" style={{ padding: '10px', flex: '1 1 auto', overflow: 'hidden', minHeight: 0 }}>
               <div style={{ fontSize: '12px', color: 'var(--accent-green)', fontWeight: '700', marginBottom: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
