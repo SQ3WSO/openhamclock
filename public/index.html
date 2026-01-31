@@ -1455,8 +1455,24 @@
     // ============================================
     // SOLAR IMAGE COMPONENT
     // ============================================
-    const SolarImage = () => {
+    // Combined Solar Panel - toggleable between image and indices
+    const SolarPanel = ({ solarIndices }) => {
+      const [showIndices, setShowIndices] = useState(() => {
+        try {
+          const saved = localStorage.getItem('openhamclock_solarPanelMode');
+          return saved === 'indices';
+        } catch (e) { return false; }
+      });
       const [imageType, setImageType] = useState('0193'); // AIA 193 (corona)
+      
+      // Save preference
+      const toggleMode = () => {
+        const newMode = !showIndices;
+        setShowIndices(newMode);
+        try {
+          localStorage.setItem('openhamclock_solarPanelMode', newMode ? 'indices' : 'image');
+        } catch (e) {}
+      };
       
       // SDO/AIA image types
       const imageTypes = {
@@ -1468,70 +1484,231 @@
       };
       
       // SDO images update every ~15 minutes
-      const timestamp = Math.floor(Date.now() / 900000) * 900000; // Round to 15 min
+      const timestamp = Math.floor(Date.now() / 900000) * 900000;
       const imageUrl = `https://sdo.gsfc.nasa.gov/assets/img/latest/latest_256_${imageType}.jpg?t=${timestamp}`;
       
+      // Kp color helper
+      const getKpColor = (value) => {
+        if (value >= 7) return '#ff0000';
+        if (value >= 5) return '#ff6600';
+        if (value >= 4) return '#ffcc00';
+        if (value >= 3) return '#88cc00';
+        return '#00ff88';
+      };
+      
+      const getKpLabel = (value) => {
+        if (value >= 7) return 'SEVERE';
+        if (value >= 5) return 'STORM';
+        if (value >= 4) return 'ACTIVE';
+        if (value >= 3) return 'UNSETTLED';
+        return 'QUIET';
+      };
+
       return (
         <div className="panel" style={{ padding: '8px' }}>
+          {/* Header with toggle */}
           <div style={{ 
             display: 'flex', 
             justifyContent: 'space-between', 
             alignItems: 'center',
             marginBottom: '6px'
           }}>
-            <span style={{ fontSize: '12px', color: 'var(--accent-amber)', fontWeight: '700' }}>☀ SOLAR</span>
-            <select 
-              value={imageType}
-              onChange={(e) => setImageType(e.target.value)}
-              onClick={(e) => e.stopPropagation()}
-              style={{
-                background: 'var(--bg-tertiary)',
-                border: '1px solid var(--border-color)',
-                color: 'var(--text-secondary)',
-                fontSize: '11px',
-                padding: '2px 4px',
-                borderRadius: '3px',
-                cursor: 'pointer'
-              }}
-            >
-              {Object.entries(imageTypes).map(([key, val]) => (
-                <option key={key} value={key}>{val.desc}</option>
-              ))}
-            </select>
+            <span style={{ fontSize: '12px', color: 'var(--accent-amber)', fontWeight: '700' }}>
+              ☀ {showIndices ? 'SOLAR INDICES' : 'SOLAR'}
+            </span>
+            <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+              {!showIndices && (
+                <select 
+                  value={imageType}
+                  onChange={(e) => setImageType(e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
+                  style={{
+                    background: 'var(--bg-tertiary)',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text-secondary)',
+                    fontSize: '10px',
+                    padding: '2px 4px',
+                    borderRadius: '3px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {Object.entries(imageTypes).map(([key, val]) => (
+                    <option key={key} value={key}>{val.desc}</option>
+                  ))}
+                </select>
+              )}
+              <button
+                onClick={toggleMode}
+                style={{
+                  background: 'var(--bg-tertiary)',
+                  border: '1px solid var(--border-color)',
+                  color: 'var(--text-secondary)',
+                  fontSize: '10px',
+                  padding: '2px 6px',
+                  borderRadius: '3px',
+                  cursor: 'pointer'
+                }}
+                title={showIndices ? 'Show solar image' : 'Show solar indices'}
+              >
+                {showIndices ? '🖼️' : '📊'}
+              </button>
+            </div>
           </div>
-          <div style={{ 
-            position: 'relative',
-            width: '100%',
-            paddingBottom: '100%', // Square aspect ratio
-            background: '#000',
-            borderRadius: '50%',
-            overflow: 'hidden'
-          }}>
-            <img 
-              src={imageUrl}
-              alt="Current Sun"
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
+          
+          {showIndices ? (
+            /* Solar Indices View */
+            <div>
+              {solarIndices?.data ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {/* SFI Row */}
+                  <div style={{ background: 'var(--bg-tertiary)', borderRadius: '6px', padding: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ minWidth: '60px' }}>
+                      <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>SFI</div>
+                      <div style={{ fontSize: '22px', fontWeight: '700', color: '#ff8800', fontFamily: 'Orbitron, monospace' }}>
+                        {solarIndices.data.sfi?.current || '--'}
+                      </div>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      {solarIndices.data.sfi?.history?.length > 0 && (
+                        <svg width="100%" height="30" viewBox="0 0 100 30" preserveAspectRatio="none">
+                          {(() => {
+                            const data = solarIndices.data.sfi.history.slice(-20);
+                            const values = data.map(d => d.value);
+                            const max = Math.max(...values, 1);
+                            const min = Math.min(...values, 0);
+                            const range = max - min || 1;
+                            const points = data.map((d, i) => {
+                              const x = (i / (data.length - 1)) * 100;
+                              const y = 30 - ((d.value - min) / range) * 28;
+                              return `${x},${y}`;
+                            }).join(' ');
+                            return <polyline points={points} fill="none" stroke="#ff8800" strokeWidth="2" />;
+                          })()}
+                        </svg>
+                      )}
+                      <div style={{ fontSize: '9px', color: 'var(--text-muted)' }}>30 day history</div>
+                    </div>
+                  </div>
+                  
+                  {/* SSN Row */}
+                  <div style={{ background: 'var(--bg-tertiary)', borderRadius: '6px', padding: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ minWidth: '60px' }}>
+                      <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Sunspots</div>
+                      <div style={{ fontSize: '22px', fontWeight: '700', color: '#ffcc00', fontFamily: 'Orbitron, monospace' }}>
+                        {solarIndices.data.ssn?.current || '--'}
+                      </div>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      {solarIndices.data.ssn?.history?.length > 0 && (
+                        <svg width="100%" height="30" viewBox="0 0 100 30" preserveAspectRatio="none">
+                          {(() => {
+                            const data = solarIndices.data.ssn.history;
+                            const values = data.map(d => d.value);
+                            const max = Math.max(...values, 1);
+                            const min = Math.min(...values, 0);
+                            const range = max - min || 1;
+                            const points = data.map((d, i) => {
+                              const x = (i / (data.length - 1)) * 100;
+                              const y = 30 - ((d.value - min) / range) * 28;
+                              return `${x},${y}`;
+                            }).join(' ');
+                            return <polyline points={points} fill="none" stroke="#ffcc00" strokeWidth="2" />;
+                          })()}
+                        </svg>
+                      )}
+                      <div style={{ fontSize: '9px', color: 'var(--text-muted)' }}>12 month history</div>
+                    </div>
+                  </div>
+                  
+                  {/* Kp Row */}
+                  <div style={{ background: 'var(--bg-tertiary)', borderRadius: '6px', padding: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ minWidth: '60px' }}>
+                      <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Kp Index</div>
+                      <div style={{ fontSize: '22px', fontWeight: '700', fontFamily: 'Orbitron, monospace', color: getKpColor(solarIndices.data.kp?.current) }}>
+                        {solarIndices.data.kp?.current?.toFixed(1) || '--'}
+                      </div>
+                      <div style={{ fontSize: '9px', color: getKpColor(solarIndices.data.kp?.current) }}>
+                        {solarIndices.data.kp?.current !== null ? getKpLabel(solarIndices.data.kp?.current) : ''}
+                      </div>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      {solarIndices.data.kp?.history?.length > 0 && (
+                        <svg width="100%" height="35" viewBox="0 0 100 35" preserveAspectRatio="none">
+                          {(() => {
+                            const hist = solarIndices.data.kp.history.slice(-16);
+                            const forecast = (solarIndices.data.kp.forecast || []).slice(0, 8);
+                            const allData = [...hist, ...forecast];
+                            const barWidth = 100 / allData.length;
+                            return allData.map((d, i) => {
+                              const isForecast = i >= hist.length;
+                              const barHeight = (d.value / 9) * 32;
+                              return (
+                                <rect
+                                  key={i}
+                                  x={i * barWidth + 0.5}
+                                  y={35 - barHeight}
+                                  width={barWidth - 1}
+                                  height={barHeight}
+                                  fill={getKpColor(d.value)}
+                                  opacity={isForecast ? 0.4 : 0.9}
+                                  rx="1"
+                                />
+                              );
+                            });
+                          })()}
+                        </svg>
+                      )}
+                      <div style={{ fontSize: '9px', color: 'var(--text-muted)' }}>3 day history + forecast</div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                  Loading solar data...
+                </div>
+              )}
+              <div style={{ textAlign: 'center', marginTop: '4px', fontSize: '9px', color: 'var(--text-muted)' }}>
+                NOAA/SWPC
+              </div>
+            </div>
+          ) : (
+            /* Solar Image View */
+            <div>
+              <div style={{ 
+                position: 'relative',
                 width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                borderRadius: '50%'
-              }}
-              onError={(e) => {
-                e.target.style.display = 'none';
-              }}
-            />
-          </div>
-          <div style={{ 
-            textAlign: 'center', 
-            marginTop: '4px', 
-            fontSize: '10px', 
-            color: 'var(--text-muted)' 
-          }}>
-            SDO/AIA • Live from NASA
-          </div>
+                paddingBottom: '100%',
+                background: '#000',
+                borderRadius: '50%',
+                overflow: 'hidden'
+              }}>
+                <img 
+                  src={imageUrl}
+                  alt="Current Sun"
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    borderRadius: '50%'
+                  }}
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                  }}
+                />
+              </div>
+              <div style={{ 
+                textAlign: 'center', 
+                marginTop: '4px', 
+                fontSize: '10px', 
+                color: 'var(--text-muted)' 
+              }}>
+                SDO/AIA • Live from NASA
+              </div>
+            </div>
+          )}
         </div>
       );
     };
@@ -2420,198 +2597,6 @@
             <a href="https://www.contestcalendar.com" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>
               WA7BNM Contest Calendar
             </a>
-          </div>
-        </div>
-      );
-    };
-
-    // ============================================
-    // SOLAR INDICES PANEL
-    // ============================================
-    const SolarIndicesPanel = ({ data, loading }) => {
-      if (loading || !data) {
-        return (
-          <div className="panel">
-            <div className="panel-header">☀️ Solar Indices</div>
-            <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>
-              Loading solar data...
-            </div>
-          </div>
-        );
-      }
-
-      const { sfi, kp, ssn } = data;
-
-      // Get Kp color based on value
-      const getKpColor = (value) => {
-        if (value >= 7) return '#ff0000'; // Severe storm
-        if (value >= 5) return '#ff6600'; // Storm
-        if (value >= 4) return '#ffcc00'; // Active
-        if (value >= 3) return '#88cc00'; // Unsettled
-        return '#00ff88'; // Quiet
-      };
-
-      // Get Kp label
-      const getKpLabel = (value) => {
-        if (value >= 7) return 'SEVERE';
-        if (value >= 5) return 'STORM';
-        if (value >= 4) return 'ACTIVE';
-        if (value >= 3) return 'UNSETTLED';
-        return 'QUIET';
-      };
-
-      // Mini sparkline chart component
-      const Sparkline = ({ data, color, height = 30, showForecast = false, forecastData = [] }) => {
-        if (!data || data.length === 0) return null;
-        
-        const allData = showForecast ? [...data, ...forecastData] : data;
-        const values = allData.map(d => d.value);
-        const max = Math.max(...values, 1);
-        const min = Math.min(...values, 0);
-        const range = max - min || 1;
-        
-        const width = 100;
-        const points = allData.map((d, i) => {
-          const x = (i / (allData.length - 1)) * width;
-          const y = height - ((d.value - min) / range) * height;
-          return `${x},${y}`;
-        }).join(' ');
-        
-        // Split point between history and forecast
-        const historyEndIndex = data.length - 1;
-        const historyPoints = data.map((d, i) => {
-          const x = (i / (allData.length - 1)) * width;
-          const y = height - ((d.value - min) / range) * height;
-          return `${x},${y}`;
-        }).join(' ');
-        
-        const forecastPoints = showForecast && forecastData.length > 0 ? 
-          [data[data.length - 1], ...forecastData].map((d, i) => {
-            const x = ((historyEndIndex + i) / (allData.length - 1)) * width;
-            const y = height - ((d.value - min) / range) * height;
-            return `${x},${y}`;
-          }).join(' ') : '';
-
-        return (
-          <svg width={width} height={height} style={{ display: 'block' }}>
-            {/* History line */}
-            <polyline
-              points={historyPoints}
-              fill="none"
-              stroke={color}
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            {/* Forecast line (dashed) */}
-            {showForecast && forecastPoints && (
-              <polyline
-                points={forecastPoints}
-                fill="none"
-                stroke={color}
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeDasharray="4,2"
-                opacity="0.6"
-              />
-            )}
-          </svg>
-        );
-      };
-
-      // Mini bar chart for Kp
-      const KpBars = ({ history, forecast }) => {
-        const allData = [...(history || []), ...(forecast || []).slice(0, 8)];
-        if (allData.length === 0) return null;
-        
-        const barWidth = 100 / allData.length;
-        const height = 35;
-        
-        return (
-          <svg width={100} height={height} style={{ display: 'block' }}>
-            {allData.map((d, i) => {
-              const isForecast = i >= (history?.length || 0);
-              const barHeight = (d.value / 9) * height;
-              return (
-                <rect
-                  key={i}
-                  x={i * barWidth + 1}
-                  y={height - barHeight}
-                  width={barWidth - 2}
-                  height={barHeight}
-                  fill={getKpColor(d.value)}
-                  opacity={isForecast ? 0.5 : 1}
-                  rx="1"
-                />
-              );
-            })}
-            {/* Divider line between history and forecast */}
-            {forecast && forecast.length > 0 && history && (
-              <line
-                x1={(history.length / allData.length) * 100}
-                y1="0"
-                x2={(history.length / allData.length) * 100}
-                y2={height}
-                stroke="#666"
-                strokeWidth="1"
-                strokeDasharray="2,2"
-              />
-            )}
-          </svg>
-        );
-      };
-
-      return (
-        <div className="panel" style={{ padding: '12px' }}>
-          <div className="panel-header" style={{ marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span>☀️ Solar Indices</span>
-            <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>NOAA/SWPC</span>
-          </div>
-          
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
-            {/* SFI */}
-            <div style={{ background: 'var(--bg-tertiary)', borderRadius: '6px', padding: '8px' }}>
-              <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginBottom: '4px' }}>SFI</div>
-              <div style={{ fontSize: '20px', fontWeight: '700', color: '#ff8800', fontFamily: 'Orbitron, monospace' }}>
-                {sfi.current || '--'}
-              </div>
-              <div style={{ marginTop: '6px' }}>
-                <Sparkline data={sfi.history} color="#ff8800" height={25} />
-              </div>
-              <div style={{ fontSize: '9px', color: 'var(--text-muted)', marginTop: '2px' }}>30 day history</div>
-            </div>
-            
-            {/* SSN */}
-            <div style={{ background: 'var(--bg-tertiary)', borderRadius: '6px', padding: '8px' }}>
-              <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginBottom: '4px' }}>Sunspots</div>
-              <div style={{ fontSize: '20px', fontWeight: '700', color: '#ffcc00', fontFamily: 'Orbitron, monospace' }}>
-                {ssn.current || '--'}
-              </div>
-              <div style={{ marginTop: '6px' }}>
-                <Sparkline data={ssn.history} color="#ffcc00" height={25} />
-              </div>
-              <div style={{ fontSize: '9px', color: 'var(--text-muted)', marginTop: '2px' }}>12 month history</div>
-            </div>
-            
-            {/* Kp Index */}
-            <div style={{ background: 'var(--bg-tertiary)', borderRadius: '6px', padding: '8px' }}>
-              <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginBottom: '4px' }}>Kp Index</div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-                <span style={{ fontSize: '20px', fontWeight: '700', color: getKpColor(kp.current), fontFamily: 'Orbitron, monospace' }}>
-                  {kp.current !== null ? kp.current.toFixed(1) : '--'}
-                </span>
-                <span style={{ fontSize: '10px', color: getKpColor(kp.current) }}>
-                  {kp.current !== null ? getKpLabel(kp.current) : ''}
-                </span>
-              </div>
-              <div style={{ marginTop: '6px' }}>
-                <KpBars history={kp.history} forecast={kp.forecast} />
-              </div>
-              <div style={{ fontSize: '9px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                3 day history + forecast
-              </div>
-            </div>
           </div>
         </div>
       );
@@ -3763,14 +3748,11 @@
               </div>
             </div>
             
-            {/* Solar Image */}
-            <SolarImage />
+            {/* Solar Panel (toggleable between image and indices) */}
+            <SolarPanel solarIndices={solarIndices} />
             
             {/* VOACAP Propagation - Toggleable */}
             <PropagationPanel propagation={propagation.data} loading={propagation.loading} />
-            
-            {/* Solar Indices with History */}
-            <SolarIndicesPanel data={solarIndices.data} loading={solarIndices.loading} />
           </div>
           
           {/* CENTER - MAP */}
