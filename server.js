@@ -41,8 +41,16 @@ if (ITURHFPROP_URL) {
 app.use(cors());
 app.use(express.json());
 
-// Serve static files from public directory
-app.use(express.static(path.join(__dirname, 'public')));
+// Serve static files - use 'dist' in production (Vite build), 'public' in development
+const staticDir = process.env.NODE_ENV === 'production' 
+  ? path.join(__dirname, 'dist')
+  : path.join(__dirname, 'public');
+app.use(express.static(staticDir));
+
+// Also serve public folder for any additional assets
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, 'public')));
+}
 
 // ============================================
 // API PROXY ENDPOINTS
@@ -2793,7 +2801,10 @@ app.get('/api/config', (req, res) => {
 // ============================================
 
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  const indexPath = process.env.NODE_ENV === 'production'
+    ? path.join(__dirname, 'dist', 'index.html')
+    : path.join(__dirname, 'public', 'index.html');
+  res.sendFile(indexPath);
 });
 
 // ============================================
