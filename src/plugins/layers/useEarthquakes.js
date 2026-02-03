@@ -96,8 +96,8 @@ export function useLayer({ enabled = false, opacity = 0.9, map = null }) {
         mag: mag,
         geojson: `[lon=${coords[0]}, lat=${coords[1]}, depth=${coords[2]}]`,
         extracted: `lat=${lat} (coords[1]), lon=${lon} (coords[0])`,
-        leafletMarkerCall: `L.marker([${lat}, ${lon}])`,
-        explanation: `Standard Leaflet [latitude, longitude] format`
+        leafletMarkerCall: `L.marker([${lon}, ${lat}])`,
+        explanation: `TESTING: Using [longitude, latitude] format`
       });
 
       currentQuakeIds.add(quakeId);
@@ -151,9 +151,18 @@ export function useLayer({ enabled = false, opacity = 0.9, map = null }) {
       });
       
       console.log(`📍 Creating marker for ${quakeId}: M${mag.toFixed(1)} at [lat=${lat}, lon=${lon}] - ${props.place}`);
-      // Use standard Leaflet [latitude, longitude] format (same as all other markers in this app)
-      const markerCoords = [lat, lon];
-      console.log(`   → Calling L.marker([${markerCoords[0]}, ${markerCoords[1]}]) - Should be [latitude, longitude]`);
+      
+      // TESTING: Try swapping to [lon, lat] format
+      // Based on user testing, [lat, lon] format is plotting in wrong locations
+      // Japan earthquake (37.6°N, 142.4°E) appearing near Tasmania with [lat, lon]
+      // This suggests coordinates need to be swapped
+      const markerCoords = [lon, lat];  // SWAPPED: [longitude, latitude]
+      
+      console.log(`   → TESTING [LON, LAT] FORMAT:`);
+      console.log(`   → markerCoords = [${markerCoords[0]}, ${markerCoords[1]}]`);
+      console.log(`   → This is [${lon}, ${lat}] = [longitude, latitude]`);
+      console.log(`   → For Japan: [142.4, 37.6] should plot in Japan, not Tasmania`);
+      
       const circle = L.marker(markerCoords, { 
         icon, 
         opacity,
@@ -187,8 +196,8 @@ export function useLayer({ enabled = false, opacity = 0.9, map = null }) {
           }
         }, 10);
         
-        // Create pulsing ring effect - use same [lat, lon] format
-        const pulseRing = L.circle([lat, lon], {
+        // Create pulsing ring effect - use same [lon, lat] format as marker
+        const pulseRing = L.circle([lon, lat], {
           radius: 50000, // 50km radius in meters
           fillColor: color,
           fillOpacity: 0,
