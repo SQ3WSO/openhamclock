@@ -760,23 +760,45 @@ body::before {
   animation: earthquake-pulse 3s ease-out;
 }
 
-/* Flash/fade animation for new earthquakes - no transform */
+/* Flash/fade animation for new earthquakes - with shake */
 @keyframes earthquake-flash {
   0% {
     opacity: 0;
     filter: brightness(3) drop-shadow(0 0 8px currentColor);
+    transform: translate(0, 0);
+  }
+  10% {
+    transform: translate(-2px, 1px) rotate(-5deg);
+  }
+  20% {
+    transform: translate(2px, -1px) rotate(5deg);
   }
   30% {
     opacity: 1;
     filter: brightness(2) drop-shadow(0 0 6px currentColor);
+    transform: translate(-1px, 2px) rotate(-3deg);
+  }
+  40% {
+    transform: translate(1px, -2px) rotate(3deg);
+  }
+  50% {
+    transform: translate(-1px, 1px) rotate(-2deg);
   }
   60% {
     opacity: 1;
     filter: brightness(1.5) drop-shadow(0 0 4px currentColor);
+    transform: translate(1px, -1px) rotate(2deg);
+  }
+  70% {
+    transform: translate(0, 1px) rotate(-1deg);
+  }
+  80% {
+    transform: translate(0, -1px) rotate(1deg);
   }
   100% {
     opacity: 1;
     filter: brightness(1) drop-shadow(0 0 0px transparent);
+    transform: translate(0, 0) rotate(0);
   }
 }
 

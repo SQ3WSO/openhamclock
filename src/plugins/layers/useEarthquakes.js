@@ -35,7 +35,7 @@ export function useLayer({ enabled = false, opacity = 0.9, map = null }) {
         // USGS GeoJSON feed - M2.5+ from last day
         const response = await fetch(
           //'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson'
-          'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/1.0_hour.geojson'
+          'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_hour.geojson'
         );
         const data = await response.json();
         setEarthquakeData(data.features || []);
@@ -88,8 +88,8 @@ export function useLayer({ enabled = false, opacity = 0.9, map = null }) {
       // Check if this is a new earthquake (but not on first load)
       const isNew = !isFirstLoad.current && !previousQuakeIds.current.has(quakeId);
 
-      // Calculate marker size based on magnitude (M2.5 = 8px, M7+ = 40px)
-      const size = Math.min(Math.max(mag * 4, 8), 40);
+      // Calculate marker size based on magnitude (M2.5 = 12px, M7+ = 36px)
+      const size = Math.min(Math.max(mag * 5, 12), 36);
 
       // Color based on magnitude
       let color;
@@ -100,16 +100,15 @@ export function useLayer({ enabled = false, opacity = 0.9, map = null }) {
       else if (mag < 7) color = '#cc0000'; // Dark red - major
       else color = '#990000'; // Very dark red - great
 
-      // Create circle marker - start with static class
-      const circle = L.circleMarker([lat, lon], {
-        radius: size / 2,
-        fillColor: color,
-        color: '#fff',
-        weight: 2,
-        opacity: opacity,
-        fillOpacity: opacity * 0.7,
-        className: 'earthquake-marker'
+      // Create earthquake icon marker (using circle with waves emoji or special char)
+      const icon = L.divIcon({
+        className: 'earthquake-icon',
+        html: `<div style="color: ${color}; font-size: ${size}px; text-shadow: 0 0 3px rgba(0,0,0,0.5); transition: all 0.3s;">🌋</div>`,
+        iconSize: [size, size],
+        iconAnchor: [size/2, size/2]
       });
+      
+      const circle = L.marker([lat, lon], { icon, opacity });
 
       // Add to map first
       circle.addTo(map);
@@ -119,17 +118,19 @@ export function useLayer({ enabled = false, opacity = 0.9, map = null }) {
         // Wait for DOM element to be created, then add animation class
         setTimeout(() => {
           try {
-            if (circle._path) {
-              circle._path.classList.add('earthquake-pulse-new');
-              
-              // Remove animation class after it completes (0.8s)
-              setTimeout(() => {
-                try {
-                  if (circle._path) {
-                    circle._path.classList.remove('earthquake-pulse-new');
-                  }
-                } catch (e) {}
-              }, 800);
+            const iconElement = circle.getElement();
+            if (iconElement) {
+              const iconDiv = iconElement.querySelector('div');
+              if (iconDiv) {
+                iconDiv.classList.add('earthquake-pulse-new');
+                
+                // Remove animation class after it completes (0.8s)
+                setTimeout(() => {
+                  try {
+                    iconDiv.classList.remove('earthquake-pulse-new');
+                  } catch (e) {}
+                }, 800);
+              }
             }
           } catch (e) {
             console.warn('Could not animate earthquake marker:', e);

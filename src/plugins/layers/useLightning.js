@@ -58,8 +58,14 @@ function generateSimulatedStrikes(count = 50) {
     const intensity = Math.random() * 200 - 50; // -50 to +150 kA
     const polarity = intensity >= 0 ? 'positive' : 'negative';
     
+    // Create stable ID based on rounded location and minute
+    // This way, strikes in the same general area/time get the same ID
+    const roundedLat = Math.round((center.lat + latOffset) * 10) / 10;
+    const roundedLon = Math.round((center.lon + lonOffset) * 10) / 10;
+    const roundedTime = Math.floor(timestamp / 60000) * 60000; // Round to minute
+    
     strikes.push({
-      id: `strike_${timestamp}_${i}`,
+      id: `strike_${roundedTime}_${roundedLat}_${roundedLon}`,
       lat: center.lat + latOffset,
       lon: center.lon + lonOffset,
       timestamp,
@@ -141,19 +147,18 @@ export function useLayer({ enabled = false, opacity = 0.9, map = null }) {
       const ageMinutes = age / 60;
       const color = getStrikeColor(ageMinutes);
       
-      // Size based on intensity (5-20px)
-      const size = Math.min(Math.max(intensity / 10, 5), 20);
+      // Size based on intensity (12-32px)
+      const size = Math.min(Math.max(intensity / 8, 12), 32);
       
-      // Create lightning bolt marker - start with static class
-      const marker = L.circleMarker([lat, lon], {
-        radius: size / 2,
-        fillColor: color,
-        color: '#fff',
-        weight: isNew ? 3 : 1,
-        opacity: opacity,
-        fillOpacity: opacity * (isNew ? 1.0 : 0.7),
-        className: 'lightning-strike'
+      // Create lightning bolt icon marker
+      const icon = L.divIcon({
+        className: 'lightning-strike-icon',
+        html: `<div style="color: ${color}; font-size: ${size}px; text-shadow: 0 0 3px rgba(255,215,0,0.5); transition: all 0.3s;">⚡</div>`,
+        iconSize: [size, size],
+        iconAnchor: [size/2, size/2]
       });
+      
+      const marker = L.marker([lat, lon], { icon, opacity });
       
       // Add to map first
       marker.addTo(map);
@@ -163,17 +168,19 @@ export function useLayer({ enabled = false, opacity = 0.9, map = null }) {
         // Wait for DOM element to be created, then add animation class
         setTimeout(() => {
           try {
-            if (marker._path) {
-              marker._path.classList.add('lightning-strike-new');
-              
-              // Remove animation class after it completes (0.8s)
-              setTimeout(() => {
-                try {
-                  if (marker._path) {
-                    marker._path.classList.remove('lightning-strike-new');
-                  }
-                } catch (e) {}
-              }, 800);
+            const iconElement = marker.getElement();
+            if (iconElement) {
+              const iconDiv = iconElement.querySelector('div');
+              if (iconDiv) {
+                iconDiv.classList.add('lightning-strike-new');
+                
+                // Remove animation class after it completes (0.8s)
+                setTimeout(() => {
+                  try {
+                    iconDiv.classList.remove('lightning-strike-new');
+                  } catch (e) {}
+                }, 800);
+              }
             }
           } catch (e) {
             console.warn('Could not animate lightning marker:', e);
