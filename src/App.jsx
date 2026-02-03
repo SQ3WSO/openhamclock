@@ -99,6 +99,7 @@ const App = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [showDXFilters, setShowDXFilters] = useState(false);
   const [showPSKFilters, setShowPSKFilters] = useState(false);
+  const [weatherExpanded, setWeatherExpanded] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   
   // Map layer visibility
@@ -613,117 +614,136 @@ const App = () => {
               </div>
             </div>
             
-            {/* Local Weather */}
+            {/* Local Weather — compact by default, click to expand */}
             {localWeather.data && (
-              <div style={{ marginTop: '12px', borderTop: '1px solid var(--border-color)', paddingTop: '12px' }}>
-                {/* Current conditions hero */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-                  <span style={{ fontSize: '28px', lineHeight: 1 }}>{localWeather.data.icon}</span>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-                      <span style={{ fontSize: '24px', fontWeight: '700', color: 'var(--text-primary)', fontFamily: 'Orbitron, monospace' }}>
-                        {localWeather.data.temp}°F
-                      </span>
+              <div style={{ marginTop: '12px', borderTop: '1px solid var(--border-color)', paddingTop: '10px' }}>
+                {/* Compact summary row — always visible */}
+                <div 
+                  onClick={() => setWeatherExpanded(!weatherExpanded)}
+                  style={{ 
+                    display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer',
+                    userSelect: 'none', padding: '2px 0',
+                  }}
+                >
+                  <span style={{ fontSize: '20px', lineHeight: 1 }}>{localWeather.data.icon}</span>
+                  <span style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text-primary)', fontFamily: 'Orbitron, monospace' }}>
+                    {localWeather.data.temp}°F
+                  </span>
+                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)', flex: 1 }}>{localWeather.data.description}</span>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace' }}>
+                    💨{localWeather.data.windSpeed}
+                  </span>
+                  <span style={{ 
+                    fontSize: '10px', color: 'var(--text-muted)', 
+                    transform: weatherExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                    transition: 'transform 0.2s',
+                  }}>▼</span>
+                </div>
+                
+                {/* Expanded details */}
+                {weatherExpanded && (
+                  <div style={{ marginTop: '10px' }}>
+                    {/* Feels like + hi/lo */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '8px', fontFamily: 'JetBrains Mono, monospace' }}>
+                      {localWeather.data.feelsLike !== localWeather.data.temp && (
+                        <span style={{ color: 'var(--text-muted)' }}>Feels like {localWeather.data.feelsLike}°F</span>
+                      )}
                       {localWeather.data.todayHigh != null && (
-                        <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace' }}>
+                        <span style={{ color: 'var(--text-muted)', marginLeft: 'auto' }}>
                           <span style={{ color: 'var(--accent-amber)' }}>▲{localWeather.data.todayHigh}°</span>
                           {' '}
                           <span style={{ color: 'var(--accent-blue)' }}>▼{localWeather.data.todayLow}°</span>
                         </span>
                       )}
                     </div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{localWeather.data.description}</div>
-                    {localWeather.data.feelsLike !== localWeather.data.temp && (
-                      <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Feels like {localWeather.data.feelsLike}°F</div>
-                    )}
-                  </div>
-                </div>
-                
-                {/* Detail grid */}
-                <div style={{ 
-                  display: 'grid', 
-                  gridTemplateColumns: '1fr 1fr', 
-                  gap: '6px 12px',
-                  fontSize: '11px',
-                  fontFamily: 'JetBrains Mono, monospace',
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>💨 Wind</span>
-                    <span style={{ color: 'var(--text-secondary)' }}>{localWeather.data.windDir} {localWeather.data.windSpeed} mph</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>💧 Humidity</span>
-                    <span style={{ color: 'var(--text-secondary)' }}>{localWeather.data.humidity}%</span>
-                  </div>
-                  {localWeather.data.windGusts > localWeather.data.windSpeed + 5 && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: 'var(--text-muted)' }}>🌬️ Gusts</span>
-                      <span style={{ color: 'var(--text-secondary)' }}>{localWeather.data.windGusts} mph</span>
-                    </div>
-                  )}
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>🌡️ Dew Pt</span>
-                    <span style={{ color: 'var(--text-secondary)' }}>{localWeather.data.dewPoint}°F</span>
-                  </div>
-                  {localWeather.data.pressure && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: 'var(--text-muted)' }}>🔵 Pressure</span>
-                      <span style={{ color: 'var(--text-secondary)' }}>{localWeather.data.pressure} hPa</span>
-                    </div>
-                  )}
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>☁️ Clouds</span>
-                    <span style={{ color: 'var(--text-secondary)' }}>{localWeather.data.cloudCover}%</span>
-                  </div>
-                  {localWeather.data.visibility && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: 'var(--text-muted)' }}>👁️ Vis</span>
-                      <span style={{ color: 'var(--text-secondary)' }}>{localWeather.data.visibility} mi</span>
-                    </div>
-                  )}
-                  {localWeather.data.uvIndex > 0 && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: 'var(--text-muted)' }}>☀️ UV</span>
-                      <span style={{ color: localWeather.data.uvIndex >= 8 ? '#ef4444' : localWeather.data.uvIndex >= 6 ? '#f97316' : localWeather.data.uvIndex >= 3 ? '#eab308' : 'var(--text-secondary)' }}>
-                        {localWeather.data.uvIndex.toFixed(1)}
-                      </span>
-                    </div>
-                  )}
-                </div>
-                
-                {/* 3-Day Forecast */}
-                {localWeather.data.daily?.length > 0 && (
-                  <div style={{ 
-                    marginTop: '10px', 
-                    paddingTop: '8px', 
-                    borderTop: '1px solid var(--border-color)',
-                  }}>
-                    <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginBottom: '6px', fontWeight: '600' }}>FORECAST</div>
-                    <div style={{ display: 'flex', gap: '4px' }}>
-                      {localWeather.data.daily.map((day, i) => (
-                        <div key={i} style={{ 
-                          flex: 1, 
-                          textAlign: 'center', 
-                          padding: '6px 2px',
-                          background: 'var(--bg-tertiary)',
-                          borderRadius: '4px',
-                          fontSize: '10px',
-                        }}>
-                          <div style={{ color: 'var(--text-muted)', fontWeight: '600', marginBottom: '2px' }}>{i === 0 ? 'Today' : day.date}</div>
-                          <div style={{ fontSize: '16px', lineHeight: 1.2 }}>{day.icon}</div>
-                          <div style={{ fontFamily: 'JetBrains Mono, monospace', marginTop: '2px' }}>
-                            <span style={{ color: 'var(--accent-amber)' }}>{day.high}°</span>
-                            <span style={{ color: 'var(--text-muted)' }}>/</span>
-                            <span style={{ color: 'var(--accent-blue)' }}>{day.low}°</span>
-                          </div>
-                          {day.precipProb > 0 && (
-                            <div style={{ color: 'var(--accent-blue)', fontSize: '9px', marginTop: '1px' }}>
-                              💧{day.precipProb}%
-                            </div>
-                          )}
+                    
+                    {/* Detail grid */}
+                    <div style={{ 
+                      display: 'grid', 
+                      gridTemplateColumns: '1fr 1fr', 
+                      gap: '6px 12px',
+                      fontSize: '11px',
+                      fontFamily: 'JetBrains Mono, monospace',
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: 'var(--text-muted)' }}>💨 Wind</span>
+                        <span style={{ color: 'var(--text-secondary)' }}>{localWeather.data.windDir} {localWeather.data.windSpeed} mph</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: 'var(--text-muted)' }}>💧 Humidity</span>
+                        <span style={{ color: 'var(--text-secondary)' }}>{localWeather.data.humidity}%</span>
+                      </div>
+                      {localWeather.data.windGusts > localWeather.data.windSpeed + 5 && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span style={{ color: 'var(--text-muted)' }}>🌬️ Gusts</span>
+                          <span style={{ color: 'var(--text-secondary)' }}>{localWeather.data.windGusts} mph</span>
                         </div>
-                      ))}
+                      )}
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: 'var(--text-muted)' }}>🌡️ Dew Pt</span>
+                        <span style={{ color: 'var(--text-secondary)' }}>{localWeather.data.dewPoint}°F</span>
+                      </div>
+                      {localWeather.data.pressure && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span style={{ color: 'var(--text-muted)' }}>🔵 Pressure</span>
+                          <span style={{ color: 'var(--text-secondary)' }}>{localWeather.data.pressure} hPa</span>
+                        </div>
+                      )}
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: 'var(--text-muted)' }}>☁️ Clouds</span>
+                        <span style={{ color: 'var(--text-secondary)' }}>{localWeather.data.cloudCover}%</span>
+                      </div>
+                      {localWeather.data.visibility && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span style={{ color: 'var(--text-muted)' }}>👁️ Vis</span>
+                          <span style={{ color: 'var(--text-secondary)' }}>{localWeather.data.visibility} mi</span>
+                        </div>
+                      )}
+                      {localWeather.data.uvIndex > 0 && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span style={{ color: 'var(--text-muted)' }}>☀️ UV</span>
+                          <span style={{ color: localWeather.data.uvIndex >= 8 ? '#ef4444' : localWeather.data.uvIndex >= 6 ? '#f97316' : localWeather.data.uvIndex >= 3 ? '#eab308' : 'var(--text-secondary)' }}>
+                            {localWeather.data.uvIndex.toFixed(1)}
+                          </span>
+                        </div>
+                      )}
                     </div>
+                    
+                    {/* 3-Day Forecast */}
+                    {localWeather.data.daily?.length > 0 && (
+                      <div style={{ 
+                        marginTop: '10px', 
+                        paddingTop: '8px', 
+                        borderTop: '1px solid var(--border-color)',
+                      }}>
+                        <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginBottom: '6px', fontWeight: '600' }}>FORECAST</div>
+                        <div style={{ display: 'flex', gap: '4px' }}>
+                          {localWeather.data.daily.map((day, i) => (
+                            <div key={i} style={{ 
+                              flex: 1, 
+                              textAlign: 'center', 
+                              padding: '6px 2px',
+                              background: 'var(--bg-tertiary)',
+                              borderRadius: '4px',
+                              fontSize: '10px',
+                            }}>
+                              <div style={{ color: 'var(--text-muted)', fontWeight: '600', marginBottom: '2px' }}>{i === 0 ? 'Today' : day.date}</div>
+                              <div style={{ fontSize: '16px', lineHeight: 1.2 }}>{day.icon}</div>
+                              <div style={{ fontFamily: 'JetBrains Mono, monospace', marginTop: '2px' }}>
+                                <span style={{ color: 'var(--accent-amber)' }}>{day.high}°</span>
+                                <span style={{ color: 'var(--text-muted)' }}>/</span>
+                                <span style={{ color: 'var(--accent-blue)' }}>{day.low}°</span>
+                              </div>
+                              {day.precipProb > 0 && (
+                                <div style={{ color: 'var(--accent-blue)', fontSize: '9px', marginTop: '1px' }}>
+                                  💧{day.precipProb}%
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
