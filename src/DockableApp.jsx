@@ -234,67 +234,6 @@ export const DockableApp = ({
     const component = node.getComponent();
 
     switch (component) {
-      case 'left-sidebar':
-        return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '8px', height: '100%', overflowY: 'auto' }}>
-            {renderDELocation()}
-            {renderDXLocation()}
-            <SolarPanel solarIndices={solarIndices} />
-            <PropagationPanel propagation={propagation.data} loading={propagation.loading} bandConditions={bandConditions} />
-          </div>
-        );
-
-      case 'right-sidebar':
-        return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', height: '100%', overflow: 'hidden' }}>
-            <div style={{ flex: '2 1 auto', minHeight: '180px', overflow: 'hidden' }}>
-              <DXClusterPanel
-                data={dxCluster.data}
-                loading={dxCluster.loading}
-                totalSpots={dxCluster.totalSpots}
-                filters={dxFilters}
-                onFilterChange={setDxFilters}
-                onOpenFilters={() => setShowDXFilters(true)}
-                onHoverSpot={setHoveredSpot}
-                hoveredSpot={hoveredSpot}
-                showOnMap={mapLayers.showDXPaths}
-                onToggleMap={toggleDXPaths}
-              />
-            </div>
-            <div style={{ flex: '1 1 auto', minHeight: '140px', overflow: 'hidden' }}>
-              <PSKReporterPanel
-                callsign={config.callsign}
-                showOnMap={mapLayers.showPSKReporter}
-                onToggleMap={togglePSKReporter}
-                filters={pskFilters}
-                onOpenFilters={() => setShowPSKFilters(true)}
-                onShowOnMap={() => {}}
-                wsjtxDecodes={wsjtx.decodes}
-                wsjtxClients={wsjtx.clients}
-                wsjtxQsos={wsjtx.qsos}
-                wsjtxStats={wsjtx.stats}
-                wsjtxLoading={wsjtx.loading}
-                wsjtxEnabled={wsjtx.enabled}
-                wsjtxPort={wsjtx.port}
-                wsjtxRelayEnabled={wsjtx.relayEnabled}
-                wsjtxRelayConnected={wsjtx.relayConnected}
-                wsjtxSessionId={wsjtx.sessionId}
-                showWSJTXOnMap={mapLayers.showWSJTX}
-                onToggleWSJTXMap={toggleWSJTX}
-              />
-            </div>
-            <div style={{ flex: '0 0 auto', minHeight: '70px', maxHeight: '100px', overflow: 'hidden' }}>
-              <DXpeditionPanel data={dxpeditions.data} loading={dxpeditions.loading} />
-            </div>
-            <div style={{ flex: '0 0 auto', minHeight: '60px', maxHeight: '90px', overflow: 'hidden' }}>
-              <POTAPanel data={potaSpots.data} loading={potaSpots.loading} showOnMap={mapLayers.showPOTA} onToggleMap={togglePOTA} />
-            </div>
-            <div style={{ flex: '0 0 auto', minHeight: '80px', maxHeight: '120px', overflow: 'hidden' }}>
-              <ContestPanel data={contests.data} loading={contests.loading} />
-            </div>
-          </div>
-        );
-
       case 'world-map':
         return renderWorldMap();
 

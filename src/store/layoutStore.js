@@ -3,11 +3,11 @@
  * Uses flexlayout-react for panel resizing, docking, and tabs
  */
 
-// Default layout configuration matching openhamclock's current structure
+// Default layout configuration with individual dockable panels
 export const DEFAULT_LAYOUT = {
   global: {
-    tabEnableFloat: false,
-    tabSetMinWidth: 150,
+    tabEnableFloat: true,
+    tabSetMinWidth: 200,
     tabSetMinHeight: 100,
     borderMinSize: 100,
     splitterSize: 6,
@@ -24,16 +24,26 @@ export const DEFAULT_LAYOUT = {
     weight: 100,
     children: [
       {
-        type: 'tabset',
+        type: 'row',
         weight: 22,
-        id: 'left-tabset',
         children: [
           {
-            type: 'tab',
-            name: 'Station',
-            component: 'left-sidebar',
-            id: 'left-sidebar-tab',
-            enableClose: false,
+            type: 'tabset',
+            weight: 50,
+            id: 'left-top-tabset',
+            children: [
+              { type: 'tab', name: 'DE Location', component: 'de-location', id: 'de-location-tab' },
+              { type: 'tab', name: 'DX Target', component: 'dx-location', id: 'dx-location-tab' }
+            ]
+          },
+          {
+            type: 'tabset',
+            weight: 50,
+            id: 'left-bottom-tabset',
+            children: [
+              { type: 'tab', name: 'Solar', component: 'solar', id: 'solar-tab' },
+              { type: 'tab', name: 'Propagation', component: 'propagation', id: 'propagation-tab' }
+            ]
           }
         ]
       },
@@ -42,26 +52,31 @@ export const DEFAULT_LAYOUT = {
         weight: 56,
         id: 'center-tabset',
         children: [
-          {
-            type: 'tab',
-            name: 'Map',
-            component: 'world-map',
-            id: 'map-tab',
-            enableClose: false,
-          }
+          { type: 'tab', name: 'World Map', component: 'world-map', id: 'map-tab', enableClose: false }
         ]
       },
       {
-        type: 'tabset',
+        type: 'row',
         weight: 22,
-        id: 'right-tabset',
         children: [
           {
-            type: 'tab',
-            name: 'DX Cluster',
-            component: 'right-sidebar',
-            id: 'right-sidebar-tab',
-            enableClose: false,
+            type: 'tabset',
+            weight: 60,
+            id: 'right-top-tabset',
+            children: [
+              { type: 'tab', name: 'DX Cluster', component: 'dx-cluster', id: 'dx-cluster-tab' },
+              { type: 'tab', name: 'PSK Reporter', component: 'psk-reporter', id: 'psk-reporter-tab' }
+            ]
+          },
+          {
+            type: 'tabset',
+            weight: 40,
+            id: 'right-bottom-tabset',
+            children: [
+              { type: 'tab', name: 'DXpeditions', component: 'dxpeditions', id: 'dxpeditions-tab' },
+              { type: 'tab', name: 'POTA', component: 'pota', id: 'pota-tab' },
+              { type: 'tab', name: 'Contests', component: 'contests', id: 'contests-tab' }
+            ]
           }
         ]
       }
@@ -71,21 +86,16 @@ export const DEFAULT_LAYOUT = {
 
 // Panel definitions for the panel picker
 export const PANEL_DEFINITIONS = {
-  // Left sidebar panels
-  'de-location': { name: 'DE Location', icon: '📍', side: 'left', description: 'Your station location and weather' },
-  'dx-location': { name: 'DX Target', icon: '🎯', side: 'left', description: 'Target location for DXing' },
-  'solar': { name: 'Solar Indices', icon: '☀️', side: 'left', description: 'Sunspot numbers and solar flux' },
-  'propagation': { name: 'Propagation', icon: '📡', side: 'left', description: 'Band conditions and forecasts' },
-
-  // Right sidebar panels
-  'dx-cluster': { name: 'DX Cluster', icon: '📻', side: 'right', description: 'Live DX spots from cluster' },
-  'psk-reporter': { name: 'PSK Reporter', icon: '📡', side: 'right', description: 'Digital mode spots and WSJT-X' },
-  'dxpeditions': { name: 'DXpeditions', icon: '🏝️', side: 'right', description: 'Upcoming DXpeditions' },
-  'pota': { name: 'POTA', icon: '🏕️', side: 'right', description: 'Parks on the Air activators' },
-  'contests': { name: 'Contests', icon: '🏆', side: 'right', description: 'Upcoming and active contests' },
-
-  // Center panels
-  'world-map': { name: 'World Map', icon: '🗺️', side: 'center', description: 'Interactive world map' },
+  'de-location': { name: 'DE Location', icon: '📍', description: 'Your station location and weather' },
+  'dx-location': { name: 'DX Target', icon: '🎯', description: 'Target location for DXing' },
+  'solar': { name: 'Solar', icon: '☀️', description: 'Sunspot numbers and solar flux' },
+  'propagation': { name: 'Propagation', icon: '📡', description: 'Band conditions and forecasts' },
+  'dx-cluster': { name: 'DX Cluster', icon: '📻', description: 'Live DX spots from cluster' },
+  'psk-reporter': { name: 'PSK Reporter', icon: '📡', description: 'Digital mode spots and WSJT-X' },
+  'dxpeditions': { name: 'DXpeditions', icon: '🏝️', description: 'Upcoming DXpeditions' },
+  'pota': { name: 'POTA', icon: '🏕️', description: 'Parks on the Air activators' },
+  'contests': { name: 'Contests', icon: '🏆', description: 'Upcoming and active contests' },
+  'world-map': { name: 'World Map', icon: '🗺️', description: 'Interactive world map' },
 };
 
 // Load layout from localStorage
