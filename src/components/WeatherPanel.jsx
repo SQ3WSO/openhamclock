@@ -1,17 +1,17 @@
 /**
  * WeatherPanel Component
  * Displays current weather conditions with expandable forecast details
- * for a given location. Uses Open-Meteo API via the useLocalWeather hook.
+ * for a given location. Uses Open-Meteo API via the useWeather hook.
  */
 import React, { useState } from 'react';
-import { useLocalWeather } from '../hooks';
+import { useWeather } from '../hooks';
 
 export const WeatherPanel = ({ location, tempUnit, onTempUnitChange }) => {
   const [weatherExpanded, setWeatherExpanded] = useState(() => {
     try { return localStorage.getItem('openhamclock_weatherExpanded') === 'true'; } catch { return false; }
   });
 
-  const localWeather = useLocalWeather(location, tempUnit);
+  const localWeather = useWeather(location, tempUnit);
 
   if (!localWeather.data) return null;
 

@@ -34,7 +34,7 @@ import {
   useDXPaths,
   usePOTASpots,
   useContests,
-  useLocalWeather,
+  useWeather,
   usePropagation,
   useMySpots,
   useDXpeditions,
@@ -229,7 +229,7 @@ const App = () => {
   const propagation = usePropagation(config.location, dxLocation);
   const mySpots = useMySpots(config.callsign);
   const satellites = useSatellites(config.location);
-  const localWeather = useLocalWeather(config.location, tempUnit);
+  const localWeather = useWeather(config.location, tempUnit);
   const pskReporter = usePSKReporter(config.callsign, { minutes: 15, enabled: config.callsign !== 'N0CALL' });
   const wsjtx = useWSJTX();
 
