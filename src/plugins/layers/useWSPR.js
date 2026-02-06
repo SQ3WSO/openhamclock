@@ -1343,19 +1343,20 @@ export function useLayer({ enabled = false, opacity = 0.7, map = null, callsign,
       else color = '#00aaff'; // Blue - cool
       
       // Create focused heatmap spots (tighter, station-specific)
-      const baseRadius = 3 + (intensity * 8); // 3-11 pixels (very tight!)
-      const numLayers = 2; // Reduced layers for tighter focus
+      const baseRadius = 5 + (intensity * 12); // 5-17 pixels (bigger for visibility)
+      const numLayers = 3; // More layers for better glow
       
       for (let i = 0; i < numLayers; i++) {
-        const layerRadius = baseRadius * (1.3 - i * 0.2); // Tighter clustering
-        const layerOpacity = (0.3 + intensity * 0.4) * (1 - i * 0.25) * heatmapOpacity; // More visible
+        const layerRadius = baseRadius * (1.5 - i * 0.3); // Bigger glow
+        // Much higher base opacity: 0.6-0.9 range, multiplied by user's heatmapOpacity setting
+        const layerOpacity = (0.6 + intensity * 0.3) * (1 - i * 0.2) * heatmapOpacity;
         
-        // Very small offset for tight clustering
-        const offsetLat = point.lat + (Math.random() - 0.5) * 0.005;
-        const offsetLon = point.lon + (Math.random() - 0.5) * 0.005;
+        // Small offset for glow effect
+        const offsetLat = point.lat + (Math.random() - 0.5) * 0.01;
+        const offsetLon = point.lon + (Math.random() - 0.5) * 0.01;
         
         const circle = L.circle([offsetLat, offsetLon], {
-          radius: layerRadius * 3000, // Much tighter (was 8000, originally 50000)
+          radius: layerRadius * 4000, // Slightly bigger for visibility (was 3000)
           fillColor: color,
           fillOpacity: layerOpacity,
           color: color,
